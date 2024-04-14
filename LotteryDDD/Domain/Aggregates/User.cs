@@ -1,4 +1,5 @@
 ﻿using LotteryDDD.Domain.Common;
+using LotteryDDD.Domain.Exceptions;
 using LotteryDDD.Domain.ValueObjects;
 
 namespace LotteryDDD.Domain.Aggregates
@@ -18,6 +19,14 @@ namespace LotteryDDD.Domain.Aggregates
             };
 
             return user;
+        }
+
+        public void PayBet(BetAmount betAmount)
+        {
+            if (Balance.Value < betAmount.Value)
+                throw new NotEnoughMoneyException(betAmount.Value);
+
+            Balance = Balance.Of(Balance.Value - betAmount.Value);
         }
     }
 }

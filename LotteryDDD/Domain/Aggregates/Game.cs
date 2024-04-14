@@ -9,7 +9,16 @@ namespace LotteryDDD.Domain.Aggregates
     {
         public GameStatus Status { get; private set; }
         public BetAmount BetAmount { get; private set; }
+        public RoundNumber RoundNumber { get; private set; }
         public List<GameUser> Users { get; set; } = new();
+        public List<GameNumber> Numbers { get; set; } = new();
+        public List<Score> Scores { get; set; } = new();
+
+        private const int usersToStart = 5;
+        private const int numbersInGame = 5;
+        private const int maxNumber = 100;
+
+        private static readonly Random random = new();
 
         public static Game Create(GameId id, BetAmount bet)
         {
@@ -17,10 +26,24 @@ namespace LotteryDDD.Domain.Aggregates
             {
                 Id = id,
                 BetAmount = bet,
-                Status = GameStatus.Created
+                Status = GameStatus.Created,
+                RoundNumber = RoundNumber.Of(0)
             };
 
             return game;
+        }
+
+        public static Game CreateOrReturnExisting(GameId id, BetAmount bet, List<Game> allGames)
+        {
+            var existingGame = allGames.FirstOrDefault(x => x.Status == GameStatus.Created);
+            if (existingGame != null)
+                return existingGame;
+            return new Game
+            {
+                Id = id,
+                BetAmount = bet,
+                Status = GameStatus.Created
+            };
         }
 
         public void AddUser(User user, List<GameUser> allGameUsers)
@@ -33,7 +56,63 @@ namespace LotteryDDD.Domain.Aggregates
                 throw new UserIsAlreadyInGameException(Id, user.Id);
 
             var newGameUser = GameUser.Create(user.Id, Id);
-            allGameUsers.Add(newGameUser);
+            user.PayBet(BetAmount);
+            Users.Add(newGameUser);
+            if (Users.Count >= usersToStart)
+                StartGame();
+        }
+
+        private void StartGame()
+        {
+            Status = GameStatus.Started;
+            RoundNumber = RoundNumber.Of(1);
+            GenerateNumbersForRound();
+        }
+
+        private void GenerateNumbersForRound()
+        {
+            for (int i = 0; i < numbersInGame; i++)
+            {
+                var gameNumberId = GameNumberId.Of(Guid.NewGuid());
+                var numberValue = GameNumberValue.Of(random.Next(maxNumber + 1));
+                var gameNumber = GameNumber.Create(gameNumberId, Id, numberValue);
+                Numbers.Add(gameNumber);
+            }
+        }
+
+        public int GuessNumbers(UserId userId, List<int> numbers, List<Score> allScores)
+        {
+            if (numbers.Count != numbersInGame)
+                throw new InvalidLengthOfNumbersException(numbers.Count);
+
+            var totalScore = 0;
+            for (int i = 0; i < numbers.Count; i++)
+            {
+                totalScore += maxNumber - Math.Abs(numbers[i] - Numbers[i].NumberValue.Value);
+            }
+            var newScore = Score.Create(userId, Id, ScorePoints.Of(totalScore));
+            Scores.Add(newScore);
+
+            var scoresInCurrentGame = allScores.Where(x => x.GameId == Id).ToList();
+            if (scoresInCurrentGame.Count() >= usersToStart)
+            {
+                FinishGame();
+            }
+
+            return totalScore;
+        }
+
+        private void FinishGame()
+        {
+            Status = GameStatus.Finished;
+        }
+
+        public UserId? GetWinnerId()
+        {
+            if (Status != GameStatus.Finished)
+                return null;
+            var winnerScore = Scores.OrderByDescending(x => x.Points).First();
+            return winnerScore.UserId;
         }
     }
 }

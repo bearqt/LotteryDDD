@@ -1,4 +1,5 @@
 ﻿using LotteryDDD.Application;
+using LotteryDDD.DTO;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LotteryDDD.Controllers
@@ -19,5 +20,20 @@ namespace LotteryDDD.Controllers
             var gameGuid = _service.AddUserToGame(userGuid);
             return Ok(gameGuid);
         }
+
+        [HttpPost("move")]
+        public IActionResult MakeMove(MoveInputModel input)
+        {
+            var score = _service.MakeMove(input.UserId, input.GameId, input.Numbers);
+            return Ok($"You received ${score} points. Congrats!");
+        }
+
+        [HttpGet("info/{gameGuid}")]
+        public IActionResult GetGameInfo(Guid gameGuid)
+        {
+            var gameInfo = _service.GetGameInfo(gameGuid);
+            return Ok(gameInfo);
+        }
+
     }
 }

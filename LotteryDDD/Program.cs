@@ -6,7 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<EfDbContext>(options =>
 {
-    options.UseNpgsql("Host=localhost;Port=5432;Database=LotteryDDD;Username=postgres;Password=HGRMxLa6"); // удалить потом
+    options
+    .UseLazyLoadingProxies()
+    .UseNpgsql("Host=localhost;Port=5432;Database=LotteryDDD;Username=postgres;Password=postgres");
 });
 
 builder.Services.AddControllers();

@@ -25,4 +25,12 @@ namespace LotteryDDD.Domain.Exceptions
         {
         }
     }
+
+    public class NotEnoughMoneyException : BadRequestException
+    {
+        public NotEnoughMoneyException(decimal betAmount)
+            : base($"User has not enought money to make a bet - {betAmount}")
+        {
+        }
+    }
 }

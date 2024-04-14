@@ -1,6 +1,7 @@
 ﻿using LotteryDDD.Domain.Aggregates;
 using LotteryDDD.Domain.Enums;
 using LotteryDDD.Domain.ValueObjects;
+using LotteryDDD.DTO;
 using LotteryDDD.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,9 @@ namespace LotteryDDD.Application
 {
     public interface IGameService
     {
-        public Guid AddUserToGame(Guid userId);
+        Guid AddUserToGame(Guid userId);
+        int MakeMove(Guid userId, Guid gameId, List<int> numbers);
+        GameInfoDTO GetGameInfo(Guid gameId);
     }
 
     public class GameService : IGameService
@@ -21,24 +24,42 @@ namespace LotteryDDD.Application
 
         public Guid AddUserToGame(Guid userId)
         {
-            var game = _dbContext.Games
-                .Where(x => x.Status == GameStatus.Created)
-                .FirstOrDefault();
-
-            var allGameUsers = _dbContext.GameUsers.Where(x => x.GameId == game.Id).ToList();
-            
             var user = _dbContext.Users.FirstOrDefault(x => x.Id == userId);
-            if (game == null)
-            {
-                var gameId = GameId.Of(Guid.NewGuid());
-                var betAmount = BetAmount.Of(1000);
-                game = Game.Create(gameId, betAmount);
+
+            var gameId = GameId.Of(Guid.NewGuid());
+            var betAmount = BetAmount.Of(1000);
+            var allGames = _dbContext.Games.ToList();
+            var game = Game.CreateOrReturnExisting(gameId, betAmount, allGames);
+            var gameIsAttached = _dbContext.Games.Local.Any(x => x.Id == game.Id);
+            if (!gameIsAttached)
                 _dbContext.Games.Add(game);
-            }
+            var allGameUsers = _dbContext.GameUsers.Where(x => x.GameId == game.Id).ToList();
             game.AddUser(user, allGameUsers);
             _dbContext.SaveChanges();
             return game.Id;
         }
 
+        public int MakeMove(Guid userId, Guid gameId, List<int> numbers) {
+            var user = _dbContext.Users.FirstOrDefault(x => x.Id == userId);
+            var game = _dbContext.Games.FirstOrDefault(x => x.Id == gameId);
+            var allScores = _dbContext.Scores.ToList();
+
+            var score = game.GuessNumbers(user.Id, numbers, allScores);
+            _dbContext.SaveChanges();
+            return score;
+        }
+
+        public GameInfoDTO GetGameInfo(Guid gameId)
+        {
+            var game = _dbContext.Games.FirstOrDefault(x => x.Id == gameId);
+            var winnerId = game.GetWinnerId();
+            var winner = _dbContext.Users.FirstOrDefault(x => x.Id == winnerId);
+            return new GameInfoDTO
+            {
+                GameId = game.Id,
+                Status = game.Status,
+                WinnerUsername = winner?.Username.Value
+            };
+        }
     }
 }

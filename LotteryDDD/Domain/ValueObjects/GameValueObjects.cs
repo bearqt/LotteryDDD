@@ -38,4 +38,21 @@ namespace LotteryDDD.Domain.ValueObjects
             return new BetAmount(value);
         }
     }
+
+    public class RoundNumber
+    {
+        public int Value { get; }
+
+        private RoundNumber(int value)
+        {
+            Value = value;
+        }
+
+        public static RoundNumber Of(int value)
+        {
+            if (value < 0 || value > 100)
+                throw new InvalidRoundNumberException(value);
+            return new RoundNumber(value);
+        }
+    }
 }

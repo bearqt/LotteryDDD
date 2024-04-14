@@ -32,4 +32,14 @@ namespace LotteryDDD.Domain.Exceptions
         {
         }
     }
+
+    public class InvalidRoundNumberException : BadRequestException
+    {
+        public InvalidRoundNumberException(int roundNumber)
+            : base($"Invalid round number - {roundNumber}")
+        {
+        }
+    }
+
+    
 }
