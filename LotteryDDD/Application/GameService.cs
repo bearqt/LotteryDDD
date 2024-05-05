@@ -12,6 +12,7 @@ namespace LotteryDDD.Application
         Guid AddUserToGame(Guid userId);
         int MakeMove(Guid userId, Guid gameId, List<int> numbers);
         GameInfoDTO GetGameInfo(Guid gameId);
+        Task LeaveGame(Guid userId);
     }
 
     public class GameService : IGameService
@@ -34,7 +35,8 @@ namespace LotteryDDD.Application
             if (!gameIsAttached)
                 _dbContext.Games.Add(game);
             var allGameUsers = _dbContext.GameUsers.Where(x => x.GameId == game.Id).ToList();
-            game.AddUser(user, allGameUsers);
+            var userReports = _dbContext.Reports.Where(x => x.UserId == userId).ToList();
+            game.AddUser(user, allGameUsers, userReports);
             _dbContext.SaveChanges();
             return game.Id;
         }
@@ -60,6 +62,14 @@ namespace LotteryDDD.Application
                 Status = game.Status,
                 WinnerUsername = winner?.Username.Value
             };
+        }
+
+        public async Task LeaveGame(Guid userId)
+        {
+            //var user = _dbContext.Users.FirstOrDefault(x => x.Id == userId);
+            var game = _dbContext.Games.SingleOrDefault(x => x.Users.Any(u => u.UserId == userId));
+            game.RemoveUser(userId);
+            await _dbContext.SaveChangesAsync();
         }
     }
 }

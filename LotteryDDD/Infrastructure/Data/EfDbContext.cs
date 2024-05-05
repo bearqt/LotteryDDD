@@ -1,5 +1,7 @@
 ﻿using LotteryDDD.Domain.Aggregates;
+using LotteryDDD.Domain.Common;
 using LotteryDDD.Domain.ValueObjects;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace LotteryDDD.Infrastructure.Data
@@ -11,13 +13,17 @@ namespace LotteryDDD.Infrastructure.Data
         public DbSet<GameUser> GameUsers { get; set; }
         public DbSet<GameNumber> GameNumbers { get; set; }
         public DbSet<Score> Scores { get; set; }
+        public DbSet<Report> Reports { get; set; }
+
+        private IMediator _mediator;
 
         public EfDbContext()
         {
         }
 
-        public EfDbContext(DbContextOptions<EfDbContext> options) : base(options)
+        public EfDbContext(DbContextOptions<EfDbContext> options, IMediator mediator) : base(options)
         {
+            _mediator = mediator;
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -105,6 +111,33 @@ namespace LotteryDDD.Infrastructure.Data
                     .HasColumnName(nameof(Score.Points))
                     .IsRequired();
                 });
+        }
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
+        {
+            var result = await base.SaveChangesAsync(cancellationToken);
+
+            // Dispatch Domain Events collection.
+            await DispatchEvents(cancellationToken);
+
+            return result;
+        }
+
+        private async Task DispatchEvents(CancellationToken cancellationToken)
+        {
+            var domainEntities = ChangeTracker
+                .Entries<IAggregate>()
+                .Where(x => x.Entity.GetDomainEvents() != null && x.Entity.GetDomainEvents().Any());
+
+            var domainEvents = domainEntities
+                .SelectMany(x => x.Entity.GetDomainEvents())
+                .ToList();
+
+            domainEntities.ToList()
+                .ForEach(entity => entity.Entity.ClearDomainEvents());
+
+            foreach (var domainEvent in domainEvents)
+                await _mediator.Publish(domainEvent, cancellationToken);
         }
     }
 }

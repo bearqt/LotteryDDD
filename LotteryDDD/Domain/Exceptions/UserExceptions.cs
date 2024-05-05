@@ -1,4 +1,5 @@
 ﻿using LotteryDDD.Domain.Common;
+using LotteryDDD.Domain.ValueObjects;
 
 namespace LotteryDDD.Domain.Exceptions
 {
@@ -30,6 +31,14 @@ namespace LotteryDDD.Domain.Exceptions
     {
         public NotEnoughMoneyException(decimal betAmount)
             : base($"User has not enought money to make a bet - {betAmount}")
+        {
+        }
+    }
+
+    public class UserBannedException : BadRequestException
+    {
+        public UserBannedException(Username username)
+            : base($"User ${username.Value} was banned for leaving too much games")
         {
         }
     }

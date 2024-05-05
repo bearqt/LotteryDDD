@@ -35,5 +35,12 @@ namespace LotteryDDD.Controllers
             return Ok(gameInfo);
         }
 
+        [HttpPost("leave/{userGuid}")]
+        public async Task<IActionResult> LeaveGame(Guid userGuid)
+        {
+            await _service.LeaveGame(userGuid);
+            return Ok();
+        }
+
     }
 }

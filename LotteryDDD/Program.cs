@@ -13,6 +13,8 @@ builder.Services.AddDbContext<EfDbContext>(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IUsersNotifierService, UsersNotifierService>();
+
 
 var app = builder.Build();
 
