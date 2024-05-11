@@ -66,7 +66,6 @@ namespace LotteryDDD.Application
 
         public async Task LeaveGame(Guid userId)
         {
-            //var user = _dbContext.Users.FirstOrDefault(x => x.Id == userId);
             var game = _dbContext.Games.SingleOrDefault(x => x.Users.Any(u => u.UserId == userId));
             game.RemoveUser(userId);
             await _dbContext.SaveChangesAsync();

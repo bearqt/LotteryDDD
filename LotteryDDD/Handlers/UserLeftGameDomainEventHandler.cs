@@ -39,7 +39,7 @@ namespace LotteryDDD.Handlers
 
         }
 
-        public Task Handle(UserLeftGameDomainEvent notification, CancellationToken cancellationToken)
+        public async Task Handle(UserLeftGameDomainEvent notification, CancellationToken cancellationToken)
         {
             var users = _dbContext.GameUsers
                 .Where(x => x.GameId == notification.gameId)
@@ -48,10 +48,12 @@ namespace LotteryDDD.Handlers
 
             foreach (var userId in users)
             {
-                _notifier.NotifyUser(userId.Value, "The game has terminated, due to user left the game :(");
+                _notifier.NotifyUser(userId.Value, "The game has restarted, due to user left the game :(");
             }
 
-            return Task.CompletedTask;
+            var game = _dbContext.Games.FirstOrDefault(x => x.Id == notification.gameId);
+            game.Restart();
+            await _dbContext.SaveChangesAsync();
         }
     }
 }

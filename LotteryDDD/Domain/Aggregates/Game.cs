@@ -78,6 +78,12 @@ namespace LotteryDDD.Domain.Aggregates
             AddDomainEvent(@event);
         }
 
+        public void Restart()
+        {
+            Status = GameStatus.Created;
+            Scores.Clear();
+        }
+
         private void GenerateNumbersForRound()
         {
             for (int i = 0; i < numbersInGame; i++)
