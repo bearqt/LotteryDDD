@@ -4,19 +4,24 @@ using LotteryDDD.Domain.Aggregates.Events;
 using LotteryDDD.Domain.ValueObjects;
 using LotteryDDD.Infrastructure.Data;
 using MediatR;
+using System.Text.Json;
 
 namespace LotteryDDD.Handlers
 {
     public class UserLeftGameReportDomainEventHandler : INotificationHandler<UserLeftGameDomainEvent>
     {
         private readonly EfDbContext _dbContext;
-        public UserLeftGameReportDomainEventHandler(EfDbContext dbContext)
+        private readonly KafkaProducerService _kafkaProducerService;
+        public UserLeftGameReportDomainEventHandler(EfDbContext dbContext, KafkaProducerService kafkaProducerService)
         {
             _dbContext = dbContext;
+            _kafkaProducerService = kafkaProducerService;
         }
 
         public async Task Handle(UserLeftGameDomainEvent notification, CancellationToken cancellationToken)
         {
+            var message = new UserLeftGameMessage(Guid.NewGuid(), notification.gameId, notification.userId, notification.username, new DateTime().ToString());
+            await _kafkaProducerService.ProduceAsync("userLeftGame", JsonSerializer.Serialize(message));
             // Репортим ливера!
             var report = Report.Create(ReportId.Of(Guid.NewGuid()), 
                 UserId.Of(notification.userId),
@@ -36,7 +41,6 @@ namespace LotteryDDD.Handlers
         {
             _notifier = notifier;
             _dbContext = dbContext;
-
         }
 
         public async Task Handle(UserLeftGameDomainEvent notification, CancellationToken cancellationToken)

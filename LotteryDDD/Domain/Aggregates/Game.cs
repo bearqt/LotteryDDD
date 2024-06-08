@@ -130,11 +130,11 @@ namespace LotteryDDD.Domain.Aggregates
             return winnerScore.UserId;
         }
 
-        public void RemoveUser(Guid userId)
+        public void RemoveUser(User user)
         {
-            Users.RemoveAll(x => x.UserId == userId);
+            Users.RemoveAll(x => x.UserId == user.Id);
             Status = GameStatus.Terminated;
-            var @event = new UserLeftGameDomainEvent(Id, userId);
+            var @event = new UserLeftGameDomainEvent(Id, user.Id, user.Username.Value);
             AddDomainEvent(@event);
         }
     }

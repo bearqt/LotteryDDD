@@ -10,11 +10,9 @@ namespace LotteryDDD.Controllers
     [Route("api/[controller]")]
     public class GamesController : ControllerBase
     {
-        private readonly IGameService _service;
         private readonly IMediator _mediator;
-        public GamesController(IGameService service, IMediator mediator)
+        public GamesController(IMediator mediator)
         {
-            _service = service;  
             _mediator = mediator;
         }
 

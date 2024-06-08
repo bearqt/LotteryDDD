@@ -21,7 +21,8 @@ namespace LotteryDDD.Features
         public async Task<LeaveGameResult> Handle(LeaveGameCommand request, CancellationToken cancellationToken)
         {
             var game = _dbContext.Games.SingleOrDefault(x => x.Users.Any(u => u.UserId == request.userId));
-            game.RemoveUser(request.userId);
+            var user = _dbContext.Users.SingleOrDefault(x => x.Id == request.userId);
+            game.RemoveUser(user);
             await _dbContext.SaveChangesAsync();
             return new LeaveGameResult(game.Id.Value);
         }
